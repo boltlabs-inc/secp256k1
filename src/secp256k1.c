@@ -492,6 +492,59 @@ int secp256k1_ecdsa_sign(const secp256k1_context* ctx, secp256k1_ecdsa_signature
     return ret;
 }
 
+/* expose ability to precompute ECDSA signature */
+int secp256k1_ecdsa_precompute_sig(const secp256k1_context* ctx,
+                                   secp256k1_ecdsa_signature *signature,
+                                   const unsigned char *noncedata32,
+                                   const unsigned char *seckey,
+                                   secp256k1_nonce_function noncefp) {
+    secp256k1_scalar r, s, kinv;
+    secp256k1_scalar sec, non, msg;
+    int ret = 0;
+    int overflow = 0;
+    VERIFY_CHECK(ctx != NULL);
+    ARG_CHECK(secp256k1_ecmult_gen_context_is_built(&ctx->ecmult_gen_ctx));
+    ARG_CHECK(noncedata32 != NULL);
+    ARG_CHECK(signature != NULL);
+    ARG_CHECK(seckey != NULL);
+    if (noncefp == NULL) {
+        noncefp = secp256k1_nonce_function_default;
+    }
+
+    secp256k1_scalar_set_b32(&sec, seckey, &overflow);
+    /* Fail if the secret key is invalid. */
+    if (!overflow && !secp256k1_scalar_is_zero(&sec)) {
+        unsigned char nonce32[32];
+        unsigned int count = 0;
+        secp256k1_scalar_set_b32(&msg, noncedata32, NULL);
+        while (1) {
+            ret = noncefp(nonce32, noncedata32, seckey, NULL, NULL, count);
+            if (!ret) {
+                break;
+            }
+            secp256k1_scalar_set_b32(&non, nonce32, &overflow);
+            if (!overflow && !secp256k1_scalar_is_zero(&non)) {
+                if (secp256k1_ecdsa_precompute_sig_internal(&ctx->ecmult_gen_ctx, &r, &s, &kinv, &sec, &non, NULL)) {
+                    break;
+                }
+            }
+            count++;
+        }
+        memset(nonce32, 0, 32);
+        secp256k1_scalar_clear(&msg);
+        secp256k1_scalar_clear(&non);
+        secp256k1_scalar_clear(&sec);
+    }
+
+    if (ret) {
+        secp256k1_ecdsa_signature_save(signature, &r, &s);
+    } else {
+        memset(signature, 0, sizeof(*signature));
+    }
+
+    return ret;
+}
+
 int secp256k1_ec_seckey_verify(const secp256k1_context* ctx, const unsigned char *seckey) {
     secp256k1_scalar sec;
     int ret;

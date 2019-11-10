@@ -549,6 +549,27 @@ SECP256K1_API int secp256k1_ecdsa_sign(
     const void *ndata
 ) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
 
+/** Precompute a ECDSA signature.
+ *
+ *  Returns: 1: signature created
+ *           0: the nonce generation function failed, or the private key was invalid.
+ *  Args:    ctx:    pointer to a context object, initialized for signing (cannot be NULL)
+ *  Out:     sig:    pointer to an array where the signature will be placed (cannot be NULL)
+ *  In:      msg32:  the 32-byte message hash being signed (cannot be NULL)
+ *           seckey: pointer to a 32-byte secret key (cannot be NULL)
+ *           noncefp:pointer to a nonce generation function. If NULL, secp256k1_nonce_function_default is used
+ *           ndata:  pointer to arbitrary data used by the nonce generation function (can be NULL)
+ *
+
+ */
+SECP256K1_API int secp256k1_ecdsa_precompute_sig(
+    const secp256k1_context* ctx,
+    secp256k1_ecdsa_signature *signature,
+    const unsigned char *noncedata32,
+    const unsigned char *seckey,
+    secp256k1_nonce_function noncefp
+) SECP256K1_ARG_NONNULL(1) SECP256K1_ARG_NONNULL(2) SECP256K1_ARG_NONNULL(3) SECP256K1_ARG_NONNULL(4);
+
 /** Verify an ECDSA secret key.
  *
  *  Returns: 1: secret key is valid
