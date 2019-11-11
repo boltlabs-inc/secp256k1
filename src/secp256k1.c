@@ -310,6 +310,19 @@ static void secp256k1_ecdsa_signature_save(secp256k1_ecdsa_signature* sig, const
     }
 }
 
+static void secp256k1_ecdsa_pre_signature_save(secp256k1_ecdsa_pre_signature* sig, const secp256k1_scalar* r, const secp256k1_scalar* s, const secp256k1_scalar* kinv) {
+    if (sizeof(secp256k1_scalar) == 32) {
+        memcpy(&sig->data[0], r, 32);
+        memcpy(&sig->data[32], s, 32);
+        memcpy(&sig->data[64], kinv, 32);
+    } else {
+        secp256k1_scalar_get_b32(&sig->data[0], r);
+        secp256k1_scalar_get_b32(&sig->data[32], s);
+        secp256k1_scalar_get_b32(&sig->data[64], kinv);
+    }
+}
+
+
 int secp256k1_ecdsa_signature_parse_der(const secp256k1_context* ctx, secp256k1_ecdsa_signature* sig, const unsigned char *input, size_t inputlen) {
     secp256k1_scalar r, s;
 
@@ -494,7 +507,7 @@ int secp256k1_ecdsa_sign(const secp256k1_context* ctx, secp256k1_ecdsa_signature
 
 /* expose ability to precompute ECDSA signature */
 int secp256k1_ecdsa_precompute_sig(const secp256k1_context* ctx,
-                                   secp256k1_ecdsa_signature *signature,
+                                   secp256k1_ecdsa_pre_signature *signature,
                                    const unsigned char *noncedata32,
                                    const unsigned char *seckey,
                                    secp256k1_nonce_function noncefp) {
@@ -537,7 +550,7 @@ int secp256k1_ecdsa_precompute_sig(const secp256k1_context* ctx,
     }
 
     if (ret) {
-        secp256k1_ecdsa_signature_save(signature, &r, &s);
+        secp256k1_ecdsa_pre_signature_save(signature, &r, &s, &kinv);
     } else {
         memset(signature, 0, sizeof(*signature));
     }

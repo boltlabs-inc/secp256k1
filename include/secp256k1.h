@@ -81,6 +81,10 @@ typedef struct {
     unsigned char data[64];
 } secp256k1_ecdsa_signature;
 
+typedef struct {
+    unsigned char data[96];
+} secp256k1_ecdsa_pre_signature;
+
 /** A pointer to a function to deterministically generate a nonce.
  *
  * Returns: 1 if a nonce was successfully generated. 0 will cause signing to fail.
@@ -564,7 +568,7 @@ SECP256K1_API int secp256k1_ecdsa_sign(
  */
 SECP256K1_API int secp256k1_ecdsa_precompute_sig(
     const secp256k1_context* ctx,
-    secp256k1_ecdsa_signature *signature,
+    secp256k1_ecdsa_pre_signature *signature,
     const unsigned char *noncedata32,
     const unsigned char *seckey,
     secp256k1_nonce_function noncefp
